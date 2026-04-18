@@ -26,3 +26,20 @@ instance/
 
 # J-Quantsトークンキャッシュ
 .jquants_token_cache.json
+
+# 生データ・キャッシュ・ログ（J-Quants 規約でデータの第三者提供は禁止のためコミット禁止）
+*.csv
+*.parquet
+*.pkl
+*.feather
+logs/
+cache/
+data/
+
+# スクリーンショット・分析結果（実数値が写るため公開リポジトリでは扱わない）
+screenshots/
+*.png
+*.jpg
+*.jpeg
+!static/**/*.png
+!static/**/*.jpg
