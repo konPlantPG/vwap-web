@@ -1,0 +1,29 @@
+# 秘匿情報（env_file 経由で注入するためイメージには含めない）
+.env
+
+# Git / IDE
+.git
+.gitignore
+.vscode
+.idea
+.DS_Store
+
+# Python キャッシュ類
+__pycache__
+*.py[cod]
+*.egg-info
+.venv
+venv
+env
+
+# ドキュメント/作業ファイル
+prompt.txt
+tasks
+
+# J-Quants のトークンキャッシュ（コンテナ毎に再生成）
+.jquants_token_cache.json
+
+# Docker 自身の成果物
+Dockerfile
+docker-compose.yml
+.dockerignore

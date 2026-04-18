@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VWAPバックテスト比較</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+  <header class="app-header">
+    <h1>VWAPバックテスト比較</h1>
+    <p class="subtitle">J-Quants日足（直近12週）× 3戦略で損益を比較します</p>
+  </header>
+
+  <main class="container">
+    {% if auth_error %}
+    <div class="alert alert-error alert-auth">
+      <div class="alert-title">🔑 J-Quants認証エラー</div>
+      <p class="alert-main">{{ auth_error.message }}</p>
+      {% if auth_error.status %}
+      <p class="alert-sub">HTTPステータス: <code>{{ auth_error.status }}</code></p>
+      {% endif %}
+      {% if auth_error.detail %}
+      <details class="alert-detail">
+        <summary>詳細（J-Quants APIからのレスポンス）</summary>
+        <pre>{{ auth_error.detail }}</pre>
+      </details>
+      {% endif %}
+      <div class="alert-howto">
+        <strong>対処方法:</strong>
+        <ol>
+          <li>
+            <a href="https://jpx-jquants.com/ja/spec/quickstart" target="_blank" rel="noopener">J-Quantsダッシュボード</a>
+            にログインし、「APIキーを発行・取得」から新しいAPIキーを発行する
+          </li>
+          <li>プロジェクトルートの <code>.env</code> を開き、<code>JQUANTS_API_KEY=...</code> を書き換える</li>
+          <li>ターミナルで <code>docker compose up -d --force-recreate web</code> を実行する（<code>restart</code> では env_file が再読込されないので注意）</li>
+        </ol>
+        <p class="alert-sub">※ V2 APIキーには有効期限はありませんが、再発行・削除が可能です</p>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if rate_limit_error %}
+    <div class="alert alert-error alert-auth">
+      <div class="alert-title">⏳ J-Quants APIのレート制限に達しました</div>
+      <p class="alert-main">{{ rate_limit_error.message }}</p>
+      {% if rate_limit_error.retry_after %}
+      <p class="alert-sub">推奨待機時間: 約 {{ rate_limit_error.retry_after|int }} 秒</p>
+      {% endif %}
+      {% if rate_limit_error.resume_at %}
+      <p class="alert-sub">再試行可能時刻の目安: <code>{{ rate_limit_error.resume_at }}</code>（Freeプランは 429 後に約5分遮断されます）</p>
+      {% endif %}
+      {% if rate_limit_error.cached_codes %}
+      <p class="alert-sub">キャッシュ済み（API不要で即再取得可能）: <code>{{ rate_limit_error.cached_codes|join(', ') }}</code></p>
+      {% endif %}
+      {% if rate_limit_error.detail %}
+      <details class="alert-detail">
+        <summary>詳細（J-Quants APIからのレスポンス）</summary>
+        <pre>{{ rate_limit_error.detail }}</pre>
+      </details>
+      {% endif %}
+      <div class="alert-howto">
+        <strong>対処方法:</strong>
+        <ol>
+          <li>Freeプランは <strong>5リクエスト/分</strong> が上限で、超過すると約5分ブロックされます</li>
+          <li>上に表示された「再試行可能時刻」まで待ってから再度実行してください</li>
+          <li>銘柄数を減らす（デフォルトは1銘柄）、連続実行の間隔を空けると回避しやすくなります</li>
+          <li>取得済み銘柄はプロセス内キャッシュに1時間残るため、再取得はAPIを消費しません</li>
+        </ol>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if error %}
+    <div class="alert alert-error">
+      <div class="alert-title">⚠ {{ error }}</div>
+      {% if errors %}
+      <ul class="alert-list">
+        {% for e in errors %}<li>{{ e }}</li>{% endfor %}
+      </ul>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <form id="backtest-form" method="post" action="{{ url_for('run_backtest') }}" class="card">
+      <h2>銘柄を選択</h2>
+      <p class="help">4桁の証券コードを入力してください（例: 7203、285A）。英字は大文字に自動変換されます。最大{{ max_codes }}銘柄まで。</p>
+
+      <div id="code-inputs" class="code-inputs" data-max="{{ max_codes }}">
+        {% for code in default_codes %}
+        <div class="code-row">
+          <input type="text" name="codes" value="{{ code }}" maxlength="4" inputmode="text"
+                 pattern="[0-9A-Za-z]{4}" placeholder="例: 7203 / 285A" class="code-input" required />
+          <button type="button" class="btn-icon btn-remove" aria-label="この銘柄を削除">−</button>
+          <span class="input-error" role="alert"></span>
+        </div>
+        {% endfor %}
+      </div>
+
+      <h2 class="section-title">リスク管理オプション</h2>
+      <p class="help">
+        買い約定後、各バーの High/Low で損切り/利確水準に到達したら即時手仕舞いします。
+        ギャップ時は寄付き価格で約定。同一バー内で両方の条件を満たす場合は損切りを優先します。
+      </p>
+      <div class="option-row">
+        <label class="option-check">
+          <input type="checkbox" name="use_stop" />
+          <span>損切りを有効化</span>
+        </label>
+        <label class="option-value">
+          エントリ価格から
+          <input type="number" name="stop_pct" value="3" min="0.1" max="50" step="0.1" />
+          % 下落で手仕舞い
+        </label>
+      </div>
+      <div class="option-row">
+        <label class="option-check">
+          <input type="checkbox" name="use_tp" />
+          <span>利確を有効化</span>
+        </label>
+        <label class="option-value">
+          エントリ価格から
+          <input type="number" name="tp_pct" value="5" min="0.1" max="100" step="0.1" />
+          % 上昇で手仕舞い
+        </label>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" id="add-code" class="btn btn-secondary">+ 銘柄を追加</button>
+        <button type="submit" id="run-btn" class="btn btn-primary">バックテスト実行</button>
+      </div>
+    </form>
+
+    <div id="loading" class="loading-overlay" hidden>
+      <div class="spinner" aria-hidden="true"></div>
+      <p>バックテスト実行中です…しばらくお待ちください</p>
+    </div>
+  </main>
+
+  <script>
+    (function () {
+      const container = document.getElementById('code-inputs');
+      const maxCodes = parseInt(container.dataset.max, 10);
+      const addBtn = document.getElementById('add-code');
+      const form = document.getElementById('backtest-form');
+      const loading = document.getElementById('loading');
+
+      function updateButtons() {
+        const rows = container.querySelectorAll('.code-row');
+        rows.forEach((row) => {
+          const rm = row.querySelector('.btn-remove');
+          rm.disabled = rows.length <= 1;
+        });
+        addBtn.disabled = rows.length >= maxCodes;
+      }
+
+      function validateInput(input) {
+        const errEl = input.parentElement.querySelector('.input-error');
+        const value = input.value.trim();
+        if (!/^[0-9A-Za-z]{4}$/.test(value)) {
+          errEl.textContent = '4桁の英数字で入力してください（例: 7203 / 285A）';
+          input.classList.add('invalid');
+          return false;
+        }
+        errEl.textContent = '';
+        input.classList.remove('invalid');
+        return true;
+      }
+
+      function bindRow(row) {
+        const input = row.querySelector('.code-input');
+        // 英字入力は大文字へ自動正規化（キオクシア=285Aなど J-Quants の命名規則に合わせる）
+        input.addEventListener('input', () => {
+          const upper = input.value.toUpperCase();
+          if (upper !== input.value) input.value = upper;
+          validateInput(input);
+        });
+        row.querySelector('.btn-remove').addEventListener('click', () => {
+          const rows = container.querySelectorAll('.code-row');
+          if (rows.length > 1) {
+            row.remove();
+            updateButtons();
+          }
+        });
+      }
+
+      container.querySelectorAll('.code-row').forEach(bindRow);
+
+      addBtn.addEventListener('click', () => {
+        const rows = container.querySelectorAll('.code-row');
+        if (rows.length >= maxCodes) return;
+        const row = document.createElement('div');
+        row.className = 'code-row';
+        row.innerHTML = `
+          <input type="text" name="codes" maxlength="4" inputmode="text"
+                 pattern="[0-9A-Za-z]{4}" placeholder="例: 7203 / 285A" class="code-input" required />
+          <button type="button" class="btn-icon btn-remove" aria-label="この銘柄を削除">−</button>
+          <span class="input-error" role="alert"></span>
+        `;
+        container.appendChild(row);
+        bindRow(row);
+        updateButtons();
+        row.querySelector('input').focus();
+      });
+
+      form.addEventListener('submit', (e) => {
+        const inputs = container.querySelectorAll('.code-input');
+        let allValid = true;
+        inputs.forEach((i) => { if (!validateInput(i)) allValid = false; });
+        if (!allValid) {
+          e.preventDefault();
+          return;
+        }
+        loading.hidden = false;
+      });
+
+      updateButtons();
+    })();
+  </script>
+</body>
+</html>
