@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{{ code }} / {{ strategy_label }} - 詳細</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
+</head>
+<body>
+  <header class="app-header">
+    <h1>{{ code }} <span class="sep">×</span> {{ strategy_label }}</h1>
+    <p class="subtitle">
+      初期資金 1,000,000円 / J-Quants日足（直近12週）
+      {% if stop_loss_pct or take_profit_pct %}
+        /
+        {% if stop_loss_pct %}損切り -{{ stop_loss_pct }}%{% endif %}
+        {% if stop_loss_pct and take_profit_pct %} + {% endif %}
+        {% if take_profit_pct %}利確 +{{ take_profit_pct }}%{% endif %}
+      {% endif %}
+    </p>
+    <nav class="breadcrumb">
+      <a href="{{ url_for('index') }}">銘柄選択</a>
+      <span>›</span>
+      <a href="{{ url_for('show_result') }}">結果一覧</a>
+      <span>›</span>
+      <span>{{ code }} / {{ strategy_label }}</span>
+    </nav>
+  </header>
+
+  <main class="container">
+    <section class="card stat-grid">
+      <div class="stat {% if stats.final_pl >= 0 %}stat-pos{% else %}stat-neg{% endif %}">
+        <div class="stat-label">最終損益</div>
+        <div class="stat-value">{{ '{:+,.0f}'.format(stats.final_pl) }} 円</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">リターン率</div>
+        <div class="stat-value">{{ '{:+.2f}'.format(stats.return_pct) }} %</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">勝率</div>
+        <div class="stat-value">{{ stats.win_rate }} %</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">取引回数</div>
+        <div class="stat-value">{{ stats.trade_count }} 回</div>
+      </div>
+      {% if stats.open_position %}
+      <div class="stat stat-note">期末時点で保有継続中（未決済）</div>
+      {% endif %}
+    </section>
+
+    <section class="card">
+      <h2>価格 + インジケータ + 売買シグナル</h2>
+      <div id="main-chart" class="plot"></div>
+    </section>
+
+    <section class="card">
+      <h2>損益曲線</h2>
+      <div id="pnl-chart" class="plot"></div>
+    </section>
+
+    <section class="card">
+      <h2>トレード履歴</h2>
+      {% if trades %}
+      <div class="table-wrap">
+        <table class="trade-table">
+          <thead>
+            <tr>
+              <th>日付</th><th>売買</th><th>理由</th><th>価格</th><th>株数</th>
+              <th>トレード損益</th><th>累計損益</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for t in trades %}
+            {% set reason = t.reason|default('SIGNAL') %}
+            <tr>
+              <td>{{ t.date }}</td>
+              <td class="side side-{{ t.side|lower }}">{{ t.side }}</td>
+              <td>
+                <span class="trade-reason reason-{{ reason|lower }}">
+                  {% if reason == 'STOP' %}損切り
+                  {% elif reason == 'TP' %}利確
+                  {% else %}シグナル{% endif %}
+                </span>
+              </td>
+              <td>{{ '{:,.2f}'.format(t.price) }}</td>
+              <td>{{ t.shares }}</td>
+              <td class="{% if t.pl > 0 %}pl-pos{% elif t.pl < 0 %}pl-neg{% endif %}">
+                {% if t.side == 'SELL' %}{{ '{:+,.0f}'.format(t.pl) }}{% else %}—{% endif %}
+              </td>
+              <td>{{ '{:+,.0f}'.format(t.cumulative_pl) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="help">期間中に約定したトレードはありません。</p>
+      {% endif %}
+    </section>
+  </main>
+
+  <script id="main-data" type="application/json">{{ main_json|safe }}</script>
+  <script id="pnl-data" type="application/json">{{ pnl_json|safe }}</script>
+  <script>
+    (function () {
+      const config = { responsive: true, displayModeBar: true };
+      const isMobile = window.innerWidth < 640;
+      // スマホでは縦長画面に合わせて高さ・余白・フォントを縮小し、
+      // 軸ラベルが潰れないようにする（ローソク足の rangeslider は Python 側で既に無効化済み）
+      const mobileHeights = { 'main-chart': 360, 'pnl-chart': 240 };
+      const specs = [
+        ['main-data', 'main-chart'],
+        ['pnl-data', 'pnl-chart'],
+      ];
+      specs.forEach(([src, target]) => {
+        const spec = JSON.parse(document.getElementById(src).textContent);
+        if (isMobile) {
+          spec.layout.height = mobileHeights[target] || spec.layout.height;
+          spec.layout.margin = { l: 40, r: 10, t: 40, b: 40 };
+          spec.layout.font = { size: 10 };
+          spec.layout.legend = { orientation: 'h', y: -0.2 };
+        }
+        Plotly.newPlot(target, spec.data, spec.layout, config);
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>バックテスト結果 - VWAPバックテスト比較</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
+</head>
+<body>
+  <header class="app-header">
+    <h1>バックテスト結果</h1>
+    <p class="subtitle">
+      対象銘柄: {{ codes|join(' / ') }} ／ 初期資金: 1,000,000円（銘柄ごとに独立）
+      {% if stop_loss_pct or take_profit_pct %}
+        ／ リスク管理:
+        {% if stop_loss_pct %}損切り -{{ stop_loss_pct }}%{% endif %}
+        {% if stop_loss_pct and take_profit_pct %} / {% endif %}
+        {% if take_profit_pct %}利確 +{{ take_profit_pct }}%{% endif %}
+      {% endif %}
+    </p>
+    <a href="{{ url_for('index') }}" class="btn btn-secondary">← 銘柄を選びなおす</a>
+  </header>
+
+  <main class="container">
+    {% if errors %}
+    <div class="alert alert-warn">
+      <strong>以下の銘柄はスキップされました:</strong>
+      <ul>
+        {% for e in errors %}<li>{{ e }}</li>{% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+
+    <section class="card">
+      <h2>最終損益ヒートマップ</h2>
+      <p class="help">セルをクリックすると銘柄×戦略の詳細ページが開きます。</p>
+      <div id="heatmap" class="plot"></div>
+    </section>
+
+    <section class="card">
+      <h2>詳細へのリンク</h2>
+      <div class="table-wrap">
+        <table class="result-table">
+          <thead>
+            <tr>
+              <th>銘柄</th>
+              {% for s in strategies %}<th>{{ s.label }}</th>{% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for code in codes %}
+            <tr>
+              <th>{{ code }}</th>
+              {% for s in strategies %}
+              {% set r = results[code][s.key] %}
+              <td class="cell {% if r.final_pl >= 0 %}cell-pos{% else %}cell-neg{% endif %}">
+                <a href="{{ url_for('detail', code=code, strategy=s.key) }}">
+                  <div class="cell-pl">{{ '{:+,.0f}'.format(r.final_pl) }}円</div>
+                  <div class="cell-sub">勝率 {{ r.win_rate }}% / 取引 {{ r.trade_count }}回</div>
+                </a>
+              </td>
+              {% endfor %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script id="heatmap-data" type="application/json">{{ heatmap_json|safe }}</script>
+  <script>
+    (function () {
+      const config = { responsive: true, displayModeBar: true };
+
+      const heatmapSpec = JSON.parse(document.getElementById('heatmap-data').textContent);
+      // スマホ（<640px）ではセル内の「損益/勝率/取引回数」が詰まりやすいのでフォントと余白を調整
+      if (window.innerWidth < 640) {
+        heatmapSpec.layout.font = { size: 10 };
+        heatmapSpec.layout.margin = { l: 50, r: 10, t: 50, b: 40 };
+        // 銘柄数 × 1 行あたり 80px を確保し、行内の文字を 3 段にしても重ならないようにする
+        const rowCount = (heatmapSpec.data[0] && heatmapSpec.data[0].y) ? heatmapSpec.data[0].y.length : 1;
+        heatmapSpec.layout.height = Math.max(260, 80 * rowCount + 120);
+      }
+      Plotly.newPlot('heatmap', heatmapSpec.data, heatmapSpec.layout, config);
+
+      // ヒートマップのセルクリックで詳細ページに遷移
+      document.getElementById('heatmap').on('plotly_click', (ev) => {
+        if (!ev.points || !ev.points.length) return;
+        const p = ev.points[0];
+        const strategyLabel = p.x;
+        const code = p.y;
+        const strategyMap = {
+          {% for s in strategies %}'{{ s.label }}': '{{ s.key }}'{% if not loop.last %},{% endif %}{% endfor %}
+        };
+        const key = strategyMap[strategyLabel];
+        if (key && code) {
+          window.location.href = `/detail/${code}/${key}`;
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

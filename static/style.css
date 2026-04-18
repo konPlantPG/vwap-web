@@ -1,0 +1,385 @@
+/* VWAPバックテスト比較 共通スタイル
+   目的: シンプルで落ち着いた配色・レスポンシブ対応・情報密度の高いダッシュボード */
+
+:root {
+  --bg: #f5f7fa;
+  --card: #ffffff;
+  --text: #1f2937;
+  --muted: #6b7280;
+  --border: #e5e7eb;
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+  --accent: #7c3aed;
+  --success: #16a34a;
+  --success-bg: #dcfce7;
+  --danger: #dc2626;
+  --danger-bg: #fee2e2;
+  --warn-bg: #fef3c7;
+  --warn-border: #f59e0b;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", "Segoe UI", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+}
+
+a { color: var(--primary); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+.app-header {
+  padding: 24px 32px;
+  background: linear-gradient(135deg, #1e3a8a 0%, #4338ca 100%);
+  color: #fff;
+  box-shadow: var(--shadow);
+}
+.app-header h1 { margin: 0 0 4px; font-size: 1.6rem; letter-spacing: 0.02em; }
+.app-header .subtitle { margin: 0; opacity: 0.85; font-size: 0.95rem; }
+.app-header .sep { opacity: 0.6; margin: 0 8px; }
+.app-header a.btn { margin-top: 12px; display: inline-block; }
+
+.breadcrumb {
+  margin-top: 10px;
+  font-size: 0.85rem;
+  color: rgba(255,255,255,0.9);
+}
+.breadcrumb a { color: #c7d2fe; }
+.breadcrumb span { margin: 0 6px; opacity: 0.7; }
+
+.container {
+  max-width: 1200px;
+  margin: 24px auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--card);
+  border-radius: 10px;
+  padding: 20px 24px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow);
+}
+.card h2 {
+  margin: 0 0 12px;
+  font-size: 1.1rem;
+  color: var(--text);
+  border-left: 3px solid var(--primary);
+  padding-left: 10px;
+}
+.help { color: var(--muted); font-size: 0.88rem; margin: 0 0 12px; }
+
+/* --- アラート --- */
+.alert {
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 0.92rem;
+}
+.alert-error {
+  background: var(--danger-bg);
+  color: var(--danger);
+  border: 1px solid #fca5a5;
+}
+.alert-warn {
+  background: var(--warn-bg);
+  color: #92400e;
+  border: 1px solid var(--warn-border);
+}
+.alert ul { margin: 8px 0 0 20px; padding: 0; }
+.alert-title { font-weight: 700; margin-bottom: 4px; font-size: 1rem; }
+.alert-main { margin: 4px 0; font-weight: 600; }
+.alert-sub { margin: 2px 0; font-size: 0.85rem; opacity: 0.85; }
+.alert-list { margin: 8px 0 0 20px; padding: 0; font-size: 0.88rem; }
+.alert-list li { margin-bottom: 4px; word-break: break-word; }
+.alert-detail { margin: 8px 0; }
+.alert-detail summary { cursor: pointer; font-size: 0.88rem; font-weight: 600; }
+.alert-detail pre {
+  background: rgba(0, 0, 0, 0.06);
+  padding: 10px 12px;
+  border-radius: 6px;
+  overflow-x: auto;
+  font-size: 0.82rem;
+  margin-top: 8px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+.alert-howto {
+  margin-top: 12px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 8px;
+  border-left: 3px solid var(--danger);
+  color: var(--text);
+  font-size: 0.9rem;
+}
+.alert-howto ol { margin: 6px 0 4px 20px; padding: 0; }
+.alert-howto li { margin-bottom: 4px; }
+.alert-howto code {
+  background: #f3f4f6;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.85em;
+  font-family: ui-monospace, Menlo, monospace;
+}
+.alert-auth { border-color: #fecaca; }
+
+/* --- 銘柄入力 --- */
+.code-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.code-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
+  gap: 6px 10px;
+  align-items: center;
+}
+.code-input {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 1rem;
+  font-family: inherit;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.code-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
+}
+.code-input.invalid {
+  border-color: var(--danger);
+  background: #fef2f2;
+}
+.input-error {
+  grid-column: 1 / -1;
+  color: var(--danger);
+  font-size: 0.82rem;
+  min-height: 1em;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 18px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+}
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:hover:not(:disabled) { background: var(--primary-hover); }
+.btn-secondary {
+  background: #fff;
+  color: var(--text);
+  border-color: var(--border);
+}
+.btn-secondary:hover:not(:disabled) { background: #f3f4f6; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text);
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-icon:hover:not(:disabled) { background: #f3f4f6; }
+.btn-icon:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.form-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* --- リスク管理オプション --- */
+.section-title {
+  margin: 20px 0 4px;
+  font-size: 1rem;
+  color: var(--text);
+  border-left: 3px solid var(--accent);
+  padding-left: 10px;
+}
+.option-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 6px 0;
+  flex-wrap: wrap;
+  font-size: 0.92rem;
+}
+.option-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.option-check input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--primary);
+}
+.option-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+}
+.option-value input[type="number"] {
+  width: 72px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-family: inherit;
+}
+
+/* --- トレード履歴の理由バッジ --- */
+.trade-reason {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.reason-signal { background: #e5e7eb; color: #374151; }
+.reason-stop { background: #fee2e2; color: #991b1b; }
+.reason-tp { background: #dbeafe; color: #1e40af; }
+
+/* --- ローディング ---
+   注意: CSSクラスの display は hidden 属性より詳細度が高いため、
+   [hidden] を明示的に display:none に戻す（これを忘れると常時表示されるバグになる）。 */
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  color: #fff;
+}
+.loading-overlay[hidden] { display: none; }
+.spinner {
+  width: 48px; height: 48px;
+  border: 4px solid rgba(255,255,255,0.25);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+  margin-bottom: 16px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* --- 結果テーブル/ヒートマップ --- */
+.plot { width: 100%; min-height: 320px; }
+
+.table-wrap { overflow-x: auto; }
+.result-table, .trade-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+.result-table th,
+.result-table td,
+.trade-table th,
+.trade-table td {
+  border-bottom: 1px solid var(--border);
+  padding: 10px 12px;
+  text-align: left;
+}
+.result-table th { background: #f9fafb; color: var(--muted); font-weight: 600; }
+.result-table td.cell { padding: 0; }
+.result-table td.cell a {
+  display: block;
+  padding: 12px;
+  color: inherit;
+}
+.result-table td.cell a:hover { background: rgba(37, 99, 235, 0.06); text-decoration: none; }
+.cell-pos { background: rgba(22, 163, 74, 0.08); }
+.cell-neg { background: rgba(220, 38, 38, 0.08); }
+.cell-pl { font-weight: 700; font-size: 1rem; }
+.cell-pos .cell-pl { color: var(--success); }
+.cell-neg .cell-pl { color: var(--danger); }
+.cell-sub { color: var(--muted); font-size: 0.82rem; }
+
+.trade-table td.side { font-weight: 600; }
+.trade-table .side-buy { color: var(--success); }
+.trade-table .side-sell { color: var(--danger); }
+.trade-table .pl-pos { color: var(--success); font-weight: 600; }
+.trade-table .pl-neg { color: var(--danger); font-weight: 600; }
+
+/* --- 詳細ページの統計カード --- */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+}
+.stat {
+  padding: 14px 16px;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+.stat-label { font-size: 0.8rem; color: var(--muted); }
+.stat-value { font-size: 1.3rem; font-weight: 700; margin-top: 4px; }
+.stat-pos .stat-value { color: var(--success); }
+.stat-neg .stat-value { color: var(--danger); }
+.stat-note {
+  grid-column: 1 / -1;
+  background: var(--warn-bg);
+  border-color: var(--warn-border);
+  color: #92400e;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+/* --- レスポンシブ --- */
+@media (max-width: 640px) {
+  .app-header { padding: 16px 18px; }
+  .container { padding: 0 12px; }
+  .card { padding: 16px; }
+  .app-header h1 { font-size: 1.3rem; }
+  .stat-value { font-size: 1.1rem; }
+
+  /* タップしやすい最小 44px を確保（Apple HIG / Material ガイドライン準拠） */
+  .btn { min-height: 44px; padding: 12px 18px; }
+  .btn-icon { width: 44px; height: 44px; font-size: 1.3rem; }
+  .code-input { min-height: 44px; padding: 12px 14px; font-size: 16px; /* iOS で自動ズーム防止のため 16px */ }
+
+  /* 結果テーブルは 3 戦略 × 銘柄で横幅が足りないため、各セルに最小幅を付けて横スクロールにフォールバック */
+  .result-table th,
+  .result-table td { min-width: 120px; white-space: nowrap; }
+  .result-table th:first-child,
+  .result-table td:first-child { min-width: 80px; position: sticky; left: 0; background: var(--card); z-index: 1; }
+  .result-table td.cell a { padding: 10px 8px; }
+  .cell-pl { font-size: 0.95rem; }
+  .cell-sub { font-size: 0.75rem; white-space: normal; }
+
+  /* トレード履歴テーブルも横スクロールで崩れ防止 */
+  .trade-table th,
+  .trade-table td { white-space: nowrap; padding: 8px 10px; font-size: 0.85rem; }
+
+  /* Plotly チャート: 縦長画面向けに少し高さを増やして軸ラベルの潰れを回避 */
+  .plot { min-height: 280px; }
+}
